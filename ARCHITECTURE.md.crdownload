@@ -1,0 +1,95 @@
+# 🏗️ Frontend & Backend Architecture - Relationship Adviser AI
+
+Complete technical architecture documentation.
+
+---
+
+## 🎨 Frontend Architecture
+
+### Technology Stack
+- Next.js 16 (React framework)
+- TypeScript 5 (Type safety)
+- Tailwind CSS 4 (Styling)
+- shadcn/ui (UI components)
+- Recharts (Charts)
+- jsPDF (PDF generation)
+
+### Component Structure
+```
+src/app/
+├── page.tsx              # Main assessment page
+├── login/page.tsx        # Login page
+├── register/page.tsx     # Registration page
+├── history/page.tsx      # Assessment history
+└── layout.tsx            # Root layout
+
+src/components/ui/       # shadcn/ui components
+src/data/                # Questions data
+src/hooks/               # React hooks
+src/lib/                 # Utilities
+```
+
+### State Management
+- React useState for component state
+- localStorage for JWT tokens
+- Fetch API for backend calls
+
+---
+
+## 🔧 Backend Architecture
+
+### Technology Stack
+- Next.js API Routes (Serverless)
+- Prisma ORM (Database)
+- SQLite (Database)
+- JWT with jose (Authentication)
+- bcryptjs (Password hashing)
+- z-ai-web-dev-sdk (AI analysis)
+
+### Database Schema
+```prisma
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  password     String
+  name         String
+  partnerName  String
+  assessments  Assessment[]
+}
+
+model Assessment {
+  id                       String   @id @default(uuid())
+  userId                   String
+  partnerAAnswers          String   // JSON
+  partnerBAnswers          String   // JSON
+  analysisResult           String   // JSON
+  overallScore             Int?
+  createdAt                DateTime @default(now())
+  user                     User     @relation
+}
+```
+
+---
+
+## 🔐 Security Features
+- Passwords hashed with bcrypt (10 salt rounds)
+- JWT tokens expire in 7 days
+- Protected routes require authentication
+- Input validation
+- SQL injection prevention
+
+---
+
+## 📊 API Endpoints
+```
+POST /api/auth/register              - Create user
+POST /api/auth/login                 - Login
+GET  /api/auth/me                    - Get current user
+POST /api/assessment                 - Save assessment
+GET  /api/assessment/history         - Get history
+POST /api/analyze-relationship       - AI analysis
+```
+
+---
+
+## 🚀 Created with Next.js 16, TypeScript 5, and Prisma ORM

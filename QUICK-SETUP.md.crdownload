@@ -1,0 +1,51 @@
+# 🎯 Quick GitHub Setup
+
+## Option 1: Automated (Recommended)
+
+```bash
+# Run the setup script
+./setup-github.sh
+```
+
+Then follow the instructions shown.
+
+---
+
+## Option 2: Manual
+
+```bash
+# 1. Save current work
+git stash
+
+# 2. Switch to main
+git checkout main
+git checkout -b relationship-adviser
+git stash pop
+
+# 3. Add and commit
+git add .
+git commit -m "Initial commit: AI-powered Relationship Adviser"
+
+# 4. Create repo on GitHub first, then:
+git remote add origin https://github.com/YOUR_USERNAME/relationship-adviser.git
+
+# 5. Push
+git push -u origin relationship-adviser
+```
+
+---
+
+## Files Ready to Push
+
+✅ README.md (15KB)
+✅ ARCHITECTURE.md (23KB)
+✅ DEMO-GUIDE.md (17KB)
+✅ QUICK-REFERENCE.md (5.6KB)
+✅ GITHUB-SETUP.md (13KB)
+✅ QUICK-SETUP.md (5.2KB)
+✅ .env.example (673 bytes)
+✅ setup-github.sh (4.4KB)
+
+---
+
+## 🚀 Ready for GitHub!

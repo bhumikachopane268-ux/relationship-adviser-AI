@@ -1,0 +1,224 @@
+# 🗄️ Database Setup Guide
+
+## Database Files
+
+### Current Database:
+```
+db/custom.db (32 KB) - SQLite database
+```
+
+### Database Location:
+```
+/home/z/my-project/db/custom.db
+```
+
+---
+
+## 📋 Database Configuration
+
+### Environment Variable:
+```env
+DATABASE_URL="file:./db/custom.db"
+```
+
+Located in: `.env` file (NOT in git)
+
+---
+
+## 🔐 Security: Database Files in .gitignore
+
+Database files are now properly ignored:
+
+```gitignore
+# Database
+db/*.db
+*.db
+*.sqlite
+*.sqlite3
+```
+
+**Why ignore database files?**
+- ❌ Contains user data (emails, passwords, assessments)
+- ❌ Changes frequently during development
+- ❌ Can contain sensitive information
+- ❌ Different for each environment (dev, staging, production)
+
+---
+
+## 📊 Database Schema
+
+```prisma
+// prisma/schema.prisma
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String?
+  partnerName   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  assessments   Assessment[]
+}
+
+model Assessment {
+  id                  String   @id @default(cuid())
+  userId              String
+  partnerAAnswers     String   // JSON string
+  partnerBAnswers     String   // JSON string
+  analysisResult      String   // JSON string
+  overallScore        Float?
+  communicationScore  Float?
+  trustScore          Float?
+  emotionalScore      Float?
+  goalScore           Float?
+  conflictScore       Float?
+  createdAt           DateTime @default(now())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+```
+
+---
+
+## 🚀 Database Operations
+
+### Push Schema to Database:
+```bash
+bun run db:push
+```
+
+### Generate Prisma Client:
+```bash
+bun run db:generate
+```
+
+### View Database (using SQLite CLI):
+```bash
+sqlite3 db/custom.db
+```
+
+### Reset Database (WARNING: Deletes all data):
+```bash
+rm db/custom.db
+bun run db:push
+```
+
+---
+
+## 🔄 Database for Production
+
+When deploying to production, switch to PostgreSQL:
+
+### Update `prisma/schema.prisma`:
+```prisma
+datasource db {
+  provider = "postgresql"  // Change from "sqlite"
+  url      = env("DATABASE_URL")
+}
+```
+
+### Update `.env`:
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/relationship_adviser"
+```
+
+### Migrate database:
+```bash
+bun run db:push
+```
+
+---
+
+## 📦 For New Users (After Cloning)
+
+When someone clones the project:
+
+1. Copy environment template:
+```bash
+cp .env.example .env
+```
+
+2. Set DATABASE_URL in `.env`:
+```env
+DATABASE_URL="file:./db/custom.db"
+```
+
+3. Set JWT_SECRET:
+```env
+JWT_SECRET="generate-secure-random-string"
+```
+
+4. Create database:
+```bash
+bun run db:push
+```
+
+5. Create test user:
+```bash
+curl -X POST http://localhost:3000/api/create-test-user
+```
+
+---
+
+## ⚠️ Important Notes
+
+### Development:
+- ✅ Uses SQLite (`db/custom.db`)
+- ✅ File-based, no setup needed
+- ✅ Good for local development
+- ✅ All data stored locally
+
+### Production:
+- ✅ Should use PostgreSQL
+- ✅ Better performance
+- ✅ More reliable
+- ✅ Better for concurrent users
+
+### Security:
+- ✅ Passwords are hashed with bcrypt
+- ✅ JWT tokens expire in 7 days
+- ✅ Database files are in .gitignore
+- ✅ Environment files are in .gitignore
+
+---
+
+## 🗂️ File Structure
+
+```
+home/z/my-project/
+├── db/
+│   └── custom.db              ⚠️  Database file (32 KB)
+├── prisma/
+│   └── schema.prisma          ✅  Database schema
+├── src/lib/
+│   └── db.ts                  ✅  Prisma client
+├── .env                       ⚠️  Environment variables (NOT in git)
+├── .env.example               ✅  Environment template
+└── .gitignore                 ✅  Ignores database files
+```
+
+---
+
+## 🎯 Summary
+
+**Current Status:**
+- ✅ Database file: `db/custom.db` (32 KB)
+- ✅ Schema: Defined in `prisma/schema.prisma`
+- ✅ Client: Configured in `src/lib/db.ts`
+- ✅ .gitignore: Updated to ignore db files
+- ⚠️  Database contains test/user data
+
+**For GitHub:**
+- ❌ `db/custom.db` will NOT be pushed
+- ❌ `.env` will NOT be pushed
+- ✅ `.env.example` WILL be pushed
+- ✅ `prisma/schema.prisma` WILL be pushed
+
+**For New Installations:**
+- Database will be created on first run
+- Schema will be pushed via `bun run db:push`
+- No manual setup needed
+
+---
+
+**Database is properly configured and secured!** 🔒

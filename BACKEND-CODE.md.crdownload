@@ -1,0 +1,726 @@
+# 🔧 Backend Implementation Files
+
+Complete backend code for Relationship Adviser AI.
+
+---
+
+## 📁 File Structure
+
+```
+src/app/api/
+├── auth/
+│   ├── register/route.ts        ✅ User Registration
+│   ├── login/route.ts           ✅ User Login
+│   ├── me/route.ts              ✅ Get Current User
+│   └── logout/route.ts          ✅ Logout
+├── assessments/
+│   ├── route.ts                 ✅ Create & Get Assessments
+│   └── [id]/route.ts            ✅ Get Specific Assessment
+├── analyze-relationship/route.ts ✅ AI Analysis
+└── create-test-user/route.ts    ✅ Test User Creation
+
+src/lib/
+└── db.ts                        ✅ Prisma Database Client
+
+prisma/
+└── schema.prisma                ✅ Database Schema
+```
+
+---
+
+## 1️⃣ User Registration
+**File:** `src/app/api/auth/register/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import bcrypt from 'bcryptjs'
+
+export async function POST(request: NextRequest) {
+  try {
+    const { email, password, name, partnerName } = await request.json()
+
+    // Validate input
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user already exists
+    const existingUser = await db.user.findUnique({
+      where: { email }
+    })
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User already exists' },
+        { status: 400 }
+      )
+    }
+
+    // Hash password with bcrypt (10 salt rounds)
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Create user in database
+    const user = await db.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        partnerName
+      }
+    })
+
+    return NextResponse.json({
+      message: 'User created successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        partnerName: user.partnerName
+      }
+    })
+  } catch (error) {
+    console.error('Registration error:', error)
+    return NextResponse.json(
+      { error: 'Failed to create user' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## 2️⃣ User Login
+**File:** `src/app/api/auth/login/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import bcrypt from 'bcryptjs'
+import { SignJWT } from 'jose'
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-min-32-characters'
+)
+
+export async function POST(request: NextRequest) {
+  try {
+    const { email, password } = await request.json()
+
+    // Validate input
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // Find user
+    const user = await db.user.findUnique({
+      where: { email }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      )
+    }
+
+    // Verify password with bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password)
+
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      )
+    }
+
+    // Create JWT token (7 days expiry)
+    const token = await new SignJWT({ userId: user.id })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(JWT_SECRET)
+
+    // Return token and user info
+    return NextResponse.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        partnerName: user.partnerName
+      }
+    })
+  } catch (error) {
+    console.error('Login error:', error)
+    return NextResponse.json(
+      { error: 'Failed to login' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## 3️⃣ Get Current User
+**File:** `src/app/api/auth/me/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+import { db } from '@/lib/db'
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-min-32-characters'
+)
+
+export async function GET(request: NextRequest) {
+  try {
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : null
+
+    // Fall back to cookie
+    if (!token) {
+      token = request.cookies.get('token')?.value
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    // Verify JWT token
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const userId = payload.userId as string
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        partnerName: true,
+        createdAt: true
+      }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ user })
+  } catch (error) {
+    console.error('Auth verification error:', error)
+    return NextResponse.json(
+      { error: 'Invalid token' },
+      { status: 401 }
+    )
+  }
+}
+```
+
+---
+
+## 4️⃣ Logout
+**File:** `src/app/api/auth/logout/route.ts`
+
+```typescript
+import { NextResponse } from 'next/server'
+
+export async function POST() {
+  // Client will clear localStorage
+  return NextResponse.json({ message: 'Logged out successfully' })
+}
+```
+
+---
+
+## 5️⃣ AI Relationship Analysis
+**File:** `src/app/api/analyze-relationship/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+import ZAI from 'z-ai-web-dev-sdk'
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-min-32-characters'
+)
+
+export async function POST(request: NextRequest) {
+  try {
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : null
+
+    // Fall back to cookie
+    if (!token) {
+      token = request.cookies.get('token')?.value
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    // Verify token
+    await jwtVerify(token, JWT_SECRET)
+
+    const { partnerAAnswers, partnerBAnswers } = await request.json()
+
+    // Format answers for AI
+    const formatAnswers = (answers: Record<string, string>) => {
+      return Object.entries(answers)
+        .map(([questionId, answer]) => {
+          const question = questionId.replace(/_/g, ' ')
+            .replace(/([A-Z])/g, ' $1')
+            .trim()
+            .replace(/^\w/, c => c.toUpperCase())
+          return `${question}: ${answer}`
+        })
+        .join('\n')
+    }
+
+    const partnerAFormatted = formatAnswers(partnerAAnswers)
+    const partnerBFormatted = formatAnswers(partnerBAnswers)
+
+    // System prompt for AI
+    const systemPrompt = `You are a professional Relationship Counselor AI.
+
+TASKS:
+1. Analyze both partners independently
+2. Compare both perspectives
+3. Identify communication, trust, emotional compatibility
+4. Calculate scores (Communication, Trust, Emotional, Goals, Conflict, Overall)
+5. Provide strengths, challenges, recommendations
+6. Create 30-Day Improvement Plan
+
+OUTPUT FORMAT:
+Overall Compatibility Score: X/100
+Communication Score: X/100
+Trust Score: X/100
+Emotional Connection Score: X/100
+Goal Alignment Score: X/100
+Conflict Management Score: X/100
+
+Strengths:
+• ...
+
+Challenges:
+• ...
+
+Recommendations:
+...
+
+30-Day Action Plan:
+Week 1: ...
+Week 2: ...
+Week 3: ...
+Week 4: ...`
+
+    const userPrompt = `Partner A Responses:
+${partnerAFormatted}
+
+Partner B Responses:
+${partnerBFormatted}
+
+Please analyze both partners' responses and generate a comprehensive relationship analysis report following the specified format.`
+
+    // Call AI
+    const zai = await ZAI.create()
+
+    const completion = await zai.chat.completions.create({
+      messages: [
+        {
+          role: 'assistant',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ],
+      thinking: { type: 'disabled' }
+    })
+
+    const messageContent = completion.choices[0]?.message?.content
+
+    if (!messageContent) {
+      throw new Error('No response from AI')
+    }
+
+    return NextResponse.json({ result: messageContent })
+  } catch (error) {
+    console.error('Error analyzing relationship:', error)
+    return NextResponse.json(
+      { error: 'Failed to analyze relationship' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## 6️⃣ Assessments CRUD
+**File:** `src/app/api/assessments/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+import { db } from '@/lib/db'
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-min-32-characters'
+)
+
+// GET - Get all assessments for current user
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : null
+
+    if (!token) {
+      token = request.cookies.get('token')?.value
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const userId = payload.userId as string
+
+    const assessments = await db.assessment.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    })
+
+    return NextResponse.json({ assessments })
+  } catch (error) {
+    console.error('Error fetching assessments:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch assessments' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Create new assessment
+export async function POST(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : null
+
+    if (!token) {
+      token = request.cookies.get('token')?.value
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const userId = payload.userId as string
+
+    const { partnerAAnswers, partnerBAnswers, analysisResult } = await request.json()
+
+    // Extract scores from AI response
+    const extractScore = (text: string, scoreName: string) => {
+      const match = text.match(new RegExp(`${scoreName}:\\s*(\\d+)/100`, 'i'))
+      return match ? parseFloat(match[1]) : null
+    }
+
+    const overallScore = extractScore(analysisResult, 'Overall Compatibility Score')
+    const communicationScore = extractScore(analysisResult, 'Communication Score')
+    const trustScore = extractScore(analysisResult, 'Trust Score')
+    const emotionalScore = extractScore(analysisResult, 'Emotional Connection Score')
+    const goalScore = extractScore(analysisResult, 'Goal Alignment Score')
+    const conflictScore = extractScore(analysisResult, 'Conflict Management Score')
+
+    // Create assessment in database
+    const assessment = await db.assessment.create({
+      data: {
+        userId,
+        partnerAAnswers: JSON.stringify(partnerAAnswers),
+        partnerBAnswers: JSON.stringify(partnerBAnswers),
+        analysisResult: JSON.stringify({ analysisResult }),
+        overallScore,
+        communicationScore,
+        trustScore,
+        emotionalScore,
+        goalScore,
+        conflictScore
+      }
+    })
+
+    return NextResponse.json({ assessment })
+  } catch (error) {
+    console.error('Error creating assessment:', error)
+    return NextResponse.json(
+      { error: 'Failed to create assessment' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## 7️⃣ Get Specific Assessment
+**File:** `src/app/api/assessments/[id]/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+import { db } from '@/lib/db'
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-min-32-characters'
+)
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    let token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : null
+
+    // Fall back to cookie
+    if (!token) {
+      token = request.cookies.get('token')?.value
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const userId = payload.userId as string
+
+    const assessment = await db.assessment.findFirst({
+      where: {
+        id: params.id,
+        userId
+      }
+    })
+
+    if (!assessment) {
+      return NextResponse.json(
+        { error: 'Assessment not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ assessment })
+  } catch (error) {
+    console.error('Error fetching assessment:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch assessment' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## 8️⃣ Test User Creation
+**File:** `src/app/api/create-test-user/route.ts`
+
+```typescript
+import { NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import bcrypt from 'bcryptjs'
+
+export async function POST() {
+  try {
+    // Check if user already exists
+    const existingUser = await db.user.findUnique({
+      where: { email: 'test@example.com' }
+    })
+
+    if (existingUser) {
+      return NextResponse.json({
+        message: 'Test user already exists',
+        email: 'test@example.com',
+        password: 'password123'
+      })
+    }
+
+    // Create test user with hashed password
+    const hashedPassword = await bcrypt.hash('password123', 10)
+
+    const user = await db.user.create({
+      data: {
+        email: 'test@example.com',
+        password: hashedPassword,
+        name: 'Test User',
+        partnerName: 'Partner'
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Test user created successfully',
+      email: 'test@example.com',
+      password: 'password123'
+    })
+  } catch (error) {
+    console.error('Error creating test user:', error)
+    return NextResponse.json(
+      { error: 'Failed to create test user' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## 9️⃣ Database Client
+**File:** `src/lib/db.ts`
+
+```typescript
+import { PrismaClient } from '@prisma/client'
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const db =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: ['query'],
+  })
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = db
+}
+```
+
+---
+
+## 🔟 Database Schema
+**File:** `prisma/schema.prisma`
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String?
+  partnerName   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  assessments   Assessment[]
+}
+
+model Assessment {
+  id                  String   @id @default(cuid())
+  userId              String
+  partnerAAnswers     String   // JSON string of answers
+  partnerBAnswers     String   // JSON string of answers
+  analysisResult      String   // JSON string of analysis
+  overallScore        Float?
+  communicationScore  Float?
+  trustScore          Float?
+  emotionalScore      Float?
+  goalScore           Float?
+  conflictScore       Float?
+  createdAt           DateTime @default(now())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+```
+
+---
+
+## 📊 API Endpoints Summary
+
+| Method | Endpoint | Purpose | Status |
+|--------|----------|---------|--------|
+| POST | `/api/auth/register` | Create new user | ✅ |
+| POST | `/api/auth/login` | Login & get JWT | ✅ |
+| GET | `/api/auth/me` | Get current user | ✅ |
+| POST | `/api/auth/logout` | Logout | ✅ |
+| POST | `/api/analyze-relationship` | AI analysis | ✅ |
+| GET | `/api/assessments` | Get user's assessments | ✅ |
+| POST | `/api/assessments` | Save assessment | ✅ |
+| GET | `/api/assessments/[id]` | Get specific assessment | ✅ |
+| POST | `/api/create-test-user` | Create test user | ✅ |
+
+---
+
+## 🎯 File Status
+
+All files are already implemented and working!
+
+```
+✅ src/app/api/auth/register/route.ts
+✅ src/app/api/auth/login/route.ts
+✅ src/app/api/auth/me/route.ts
+✅ src/app/api/auth/logout/route.ts
+✅ src/app/api/analyze-relationship/route.ts
+✅ src/app/api/assessments/route.ts
+✅ src/app/api/assessments/[id]/route.ts
+✅ src/app/api/create-test-user/route.ts
+✅ src/lib/db.ts
+✅ prisma/schema.prisma
+```
+
+---
+
+## 🚀 Ready to Use!
+
+All backend code is properly implemented in the files. The application is fully functional!
+
+---
+
+**Status:** ✅ All backend files implemented and working

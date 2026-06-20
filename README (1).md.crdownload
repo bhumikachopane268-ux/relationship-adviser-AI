@@ -1,0 +1,578 @@
+# AI-Powered Relationship Adviser 🤝❤️
+
+A professional web application that helps couples assess and improve their relationships through AI-powered analysis, personalized advice, and actionable improvement plans.
+
+## 🌟 Features
+
+### 🔐 User Authentication
+- User registration and login system
+- JWT-based secure authentication
+- Profile management with partner information
+- Persistent sessions using localStorage
+
+### 💑 Relationship Assessment
+- Comprehensive 10-question assessment covering key relationship areas
+- Dual-partner input for balanced evaluation
+- Categories include:
+  - Communication
+  - Trust & Honesty
+  - Emotional Connection
+  - Conflict Resolution
+  - Shared Values
+  - Intimacy
+  - Future Goals
+  - Support System
+
+### 🤖 AI-Powered Analysis
+- Intelligent compatibility scoring
+- Detailed strength identification
+- Challenge area recognition
+- Personalized actionable advice
+- 30-day improvement roadmap
+
+### 📊 Visual Analytics
+- Interactive radar charts for multi-dimensional scores
+- Bar charts for category-wise performance
+- Clean, professional visualization with Recharts
+
+### 📄 PDF Reports
+- Downloadable comprehensive relationship reports
+- Professional formatting with jsPDF
+- Include all scores, insights, and recommendations
+
+### 📜 Assessment History
+- View past relationship assessments
+- Track progress over time
+- Compare results across different periods
+
+### 🎨 Modern UI/UX
+- Dark/Light mode support
+- Responsive design for all devices
+- Smooth animations and transitions
+- Accessible and user-friendly interface
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4
+- **UI Components**: shadcn/ui (New York style)
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **PDF Generation**: jsPDF
+- **State Management**: Zustand
+- **Theme**: next-themes
+
+### Backend
+- **Framework**: Next.js API Routes
+- **Database**: SQLite with Prisma ORM
+- **Authentication**: JWT with jose library
+- **Password Hashing**: bcryptjs
+- **AI Integration**: z-ai-web-dev-sdk
+
+### Development
+- **Package Manager**: Bun
+- **Code Quality**: ESLint
+- **Type Checking**: TypeScript
+
+## 📋 Prerequisites
+
+- Node.js 18+ or Bun runtime
+- Git (for version control)
+- Web browser (Chrome, Firefox, Safari, Edge)
+
+## 🚀 Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/relationship-adviser.git
+cd relationship-adviser
+```
+
+### 2. Install Dependencies
+
+```bash
+bun install
+```
+
+### 3. Setup Database
+
+```bash
+# Push database schema
+bun run db:push
+
+# (Optional) Generate Prisma client
+bun run db:generate
+```
+
+### 4. Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+# Database
+DATABASE_URL="file:./db/dev.db"
+
+# JWT Secret (generate a secure random string)
+JWT_SECRET="your-super-secret-jwt-key-here"
+```
+
+### 5. Start Development Server
+
+```bash
+bun run dev
+```
+
+The application will be available at `http://localhost:3000`
+
+## 📖 Usage Guide
+
+### First Time Setup
+
+1. **Register a new account**
+   - Visit the registration page
+   - Enter your email, password, name, and partner's name
+   - Submit the form to create your account
+
+2. **Complete Assessment**
+   - Answer 10 questions about your relationship
+   - Each question is answered by both partners
+   - Questions cover 8 key relationship areas
+
+3. **View Results**
+   - Receive instant AI-powered analysis
+   - View compatibility scores across all categories
+   - Read personalized strengths and challenges
+
+4. **Download Report**
+   - Click "Download PDF Report" button
+   - Get a comprehensive printable report
+   - Share with your partner
+
+5. **Track Progress**
+   - Complete assessments periodically
+   - View history in the dashboard
+   - Monitor improvement over time
+
+### Assessment Categories
+
+| Category | Description |
+|----------|-------------|
+| Communication | How well you express thoughts and feelings |
+| Trust & Honesty | Level of trust and transparency |
+| Emotional Connection | Depth of emotional bond |
+| Conflict Resolution | How you handle disagreements |
+| Shared Values | Alignment in beliefs and priorities |
+| Intimacy | Physical and emotional closeness |
+| Future Goals | Compatibility in life plans |
+| Support System | How you support each other |
+
+## 🔌 API Endpoints
+
+### Authentication
+
+#### POST `/api/auth/register`
+Register a new user account.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "name": "John Doe",
+  "partnerName": "Jane Doe"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User created successfully",
+  "token": "jwt-token-here",
+  "user": {
+    "id": "user-id",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "partnerName": "Jane Doe"
+  }
+}
+```
+
+#### POST `/api/auth/login`
+Authenticate user and receive JWT token.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Login successful",
+  "token": "jwt-token-here",
+  "user": {
+    "id": "user-id",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "partnerName": "Jane Doe"
+  }
+}
+```
+
+#### GET `/api/auth/me`
+Get current authenticated user information.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "user": {
+    "id": "user-id",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "partnerName": "Jane Doe"
+  }
+}
+```
+
+### Assessment
+
+#### POST `/api/assessment`
+Save a completed relationship assessment.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+  "partnerAAnswers": [4, 5, 3, 4, 5, 4, 3, 5, 4, 4],
+  "partnerBAnswers": [5, 4, 4, 5, 4, 5, 4, 4, 5, 3],
+  "analysisResult": {
+    "overallScore": 82,
+    "trustScore": 85,
+    "communicationScore": 80,
+    "emotionalConnectionScore": 79,
+    "strengths": ["strength1", "strength2"],
+    "challenges": ["challenge1", "challenge2"],
+    "advice": "advice text",
+    "plan30Days": ["day1", "day2"]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Assessment saved successfully",
+  "assessment": {
+    "id": "assessment-id",
+    "userId": "user-id",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### GET `/api/assessment/history`
+Get all assessments for the authenticated user.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "assessments": [
+    {
+      "id": "assessment-id",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "overallScore": 82,
+      "trustScore": 85,
+      "communicationScore": 80,
+      "emotionalConnectionScore": 79
+    }
+  ]
+}
+```
+
+#### GET `/api/assessment/[id]`
+Get a specific assessment by ID.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "assessment": {
+    "id": "assessment-id",
+    "partnerAAnswers": [4, 5, 3, 4, 5, 4, 3, 5, 4, 4],
+    "partnerBAnswers": [5, 4, 4, 5, 4, 5, 4, 4, 5, 3],
+    "analysisResult": { ... },
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+### Analysis
+
+#### POST `/api/analyze-relationship`
+Generate AI-powered relationship analysis.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+  "partnerAAnswers": [4, 5, 3, 4, 5, 4, 3, 5, 4, 4],
+  "partnerBAnswers": [5, 4, 4, 5, 4, 5, 4, 4, 5, 3]
+}
+```
+
+**Response:**
+```json
+{
+  "overallScore": 82,
+  "trustScore": 85,
+  "communicationScore": 80,
+  "emotionalConnectionScore": 79,
+  "strengths": ["Strong communication foundation", "High level of mutual respect"],
+  "challenges": ["Need more quality time together", "Conflict resolution patterns could improve"],
+  "advice": "Based on your assessment, here are personalized recommendations...",
+  "plan30Days": [
+    "Week 1: Schedule a weekly date night",
+    "Week 2: Practice active listening exercises",
+    "Week 3: Discuss and align on future goals",
+    "Week 4: Review progress and celebrate successes"
+  ]
+}
+```
+
+## 🗄️ Database Schema
+
+### User Model
+```prisma
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  password     String
+  name         String
+  partnerName  String
+  createdAt    DateTime     @default(now())
+  assessments  Assessment[]
+}
+```
+
+### Assessment Model
+```prisma
+model Assessment {
+  id                String   @id @default(uuid())
+  userId            String
+  partnerAAnswers   String   // JSON string
+  partnerBAnswers   String   // JSON string
+  analysisResult    String   // JSON string
+  overallScore      Int?
+  trustScore        Int?
+  communicationScore Int?
+  emotionalConnectionScore Int?
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+```
+
+## 📁 Project Structure
+
+```
+relationship-adviser/
+├── prisma/
+│   ├── schema.prisma          # Database schema
+│   └── migrations/            # Database migrations
+├── db/
+│   └── dev.db                 # SQLite database file
+├── public/
+│   └── images/                # Static assets
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── auth/
+│   │   │   │   ├── login/
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── register/
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── me/
+│   │   │   │       └── route.ts
+│   │   │   ├── assessment/
+│   │   │   │   ├── route.ts
+│   │   │   │   ├── history/
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── [id]/
+│   │   │   │       └── route.ts
+│   │   │   └── analyze-relationship/
+│   │   │       └── route.ts
+│   │   ├── login/
+│   │   │   └── page.tsx       # Login page
+│   │   ├── register/
+│   │   │   └── page.tsx       # Registration page
+│   │   ├── layout.tsx         # Root layout
+│   │   └── page.tsx           # Main assessment page
+│   ├── components/
+│   │   ├── ui/                # shadcn/ui components
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   └── ...
+│   │   ├── theme-provider.tsx
+│   │   └── score-card.tsx     # Custom score display component
+│   ├── data/
+│   │   └── relationship-questions.ts  # Assessment questions
+│   ├── lib/
+│   │   ├── db.ts              # Prisma client
+│   │   ├── utils.ts           # Utility functions
+│   │   └── auth.ts            # Auth utilities
+│   └── hooks/
+│       ├── use-auth.ts        # Authentication hook
+│       └── use-theme.ts       # Theme hook
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── next.config.ts
+└── README.md
+```
+
+## 🎯 Key Implementation Details
+
+### Authentication Flow
+1. User registers/logs in
+2. Server generates JWT token
+3. Token stored in localStorage
+4. All subsequent API calls include `Authorization: Bearer {token}` header
+5. Server validates token on protected routes
+
+### Assessment Process
+1. Users answer 10 questions (5 per partner)
+2. Answers sent to `/api/analyze-relationship`
+3. AI analyzes answers and generates:
+   - Compatibility scores (overall + category-specific)
+   - Identified strengths
+   - Areas for improvement
+   - Personalized advice
+   - 30-day action plan
+4. Results displayed with visual charts
+5. Assessment saved to database for history
+
+### Score Calculation
+- **Overall Score**: Average of all categories (0-100)
+- **Trust Score**: Based on honesty, transparency, reliability
+- **Communication Score**: Based on expression, listening, understanding
+- **Emotional Connection Score**: Based on intimacy, empathy, support
+
+## 🔒 Security Features
+
+- Password hashing with bcryptjs
+- JWT token authentication
+- Protected API routes
+- SQL injection prevention via Prisma ORM
+- XSS protection via React's built-in escaping
+- CORS configuration for API routes
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Issue: Login fails with "Invalid credentials"**
+- Solution: Ensure correct email/password, check if user exists in database
+
+**Issue: API returns 401 Unauthorized**
+- Solution: Check if token is stored in localStorage and included in Authorization header
+
+**Issue: Database connection error**
+- Solution: Verify DATABASE_URL in .env.local, run `bun run db:push`
+
+**Issue: Charts not displaying**
+- Solution: Ensure Recharts is installed, check console for errors
+
+## 📝 Development Notes
+
+### Adding New Questions
+Edit `src/data/relationship-questions.ts`:
+```typescript
+export const relationshipQuestions = [
+  {
+    id: 1,
+    category: 'Communication',
+    question: 'How well do you and your partner communicate?',
+    partnerAQuestion: 'How well do you communicate with your partner?',
+    partnerBQuestion: 'How well does your partner communicate with you?'
+  },
+  // Add more questions...
+]
+```
+
+### Customizing AI Analysis
+Modify `src/app/api/analyze-relationship/route.ts` to adjust the prompt sent to the AI.
+
+### Styling Components
+Use Tailwind CSS classes. For shadcn/ui components, check `src/components/ui/`.
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+1. Push code to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
+
+### Other Platforms
+Ensure the platform supports:
+- Next.js 16
+- Node.js 18+
+- SQLite or configure for PostgreSQL/MySQL
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📧 Support
+
+For issues or questions, please open an issue on GitHub or contact support@example.com.
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+- AI powered by [z-ai-web-dev-sdk](https://z-ai.com/)
+- Charts by [Recharts](https://recharts.org/)
+
+---
+
+**Note**: This is a demo project for educational purposes. For real relationship advice, please consult professional counselors or therapists.
+
+Made with ❤️ by [Your Name]

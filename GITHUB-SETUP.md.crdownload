@@ -1,0 +1,91 @@
+# 🚀 GitHub Setup Guide
+
+## Quick Setup (3 Commands)
+
+```bash
+# 1. Add all files
+git add .
+
+# 2. Commit
+git commit -m "Initial commit: Relationship Adviser AI"
+
+# 3. Push to GitHub
+git push origin main
+```
+
+---
+
+## Step-by-Step Setup
+
+### 1. Create Repository on GitHub
+
+Go to: https://github.com/new
+
+- Repository name: `relationship-adviser`
+- Description: `AI-powered Relationship Adviser Application`
+- Click "Create repository"
+
+### 2. Link Your Repository
+
+```bash
+# Replace YOUR_USERNAME with your GitHub username
+git remote add origin https://github.com/YOUR_USERNAME/relationship-adviser.git
+```
+
+### 3. Push to GitHub
+
+```bash
+git push -u origin main
+```
+
+---
+
+## After Cloning (For Others)
+
+```bash
+# Clone repository
+git clone https://github.com/YOUR_USERNAME/relationship-adviser.git
+cd relationship-adviser
+
+# Install dependencies
+bun install
+
+# Setup database
+bun run db:push
+
+# Create .env.local
+cp .env.example .env.local
+# Add JWT_SECRET
+
+# Run server
+bun run dev
+```
+
+---
+
+## Files That Will Be on GitHub
+
+✅ README.md
+✅ ARCHITECTURE.md
+✅ DEMO-GUIDE.md
+✅ QUICK-REFERENCE.md
+✅ GITHUB-SETUP.md
+✅ .env.example
+✅ src/ (all source code)
+✅ prisma/schema.prisma
+
+---
+
+## ❌ What Will NOT Be on GitHub
+
+❌ .env (contains secrets)
+❌ .env.local (contains secrets)
+❌ node_modules/ (too large)
+❌ db/*.db (database files)
+❌ *.log (log files)
+
+---
+
+## 🎉 Done!
+
+Your project is ready for GitHub! 🚀
